@@ -7,3 +7,37 @@ content-type: application/json
   "url": "test",
   "likes": 0
 }
+
+### add user
+
+POST localhost:3001/api/users
+content-type: application/json
+
+{
+  "username": "root",
+  "name": "Superuser",
+  "password": "test"
+}
+
+###
+
+POST localhost:3001/api/login
+content-type: application/json
+
+{
+  "username": "slidxr",
+  "password": "slidxr1234"
+}
+
+###
+
+POST localhost:3001/api/blogs
+content-type: application/json
+authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InNsaWR4ciIsImlkIjoiNjU0MjgxM2U4ZmIyMWVmNTBhMTBlNjg5IiwiaWF0IjoxNjk4ODU4MTI5fQ.LqNP8bLG-imumczOL6wKiNsZzE17_z3BNKxvnbFNbeo
+
+{
+    "title": "bye mark",
+    "author": "me",
+    "url": "tesfffft",
+    "likes": 343
+}

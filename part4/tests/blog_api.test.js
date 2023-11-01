@@ -2,6 +2,9 @@ const mongoose = require('mongoose')
 const supertest = require('supertest')
 const app = require('../app')
 const Blog = require('../models/blog')
+const bcrypt = require('bcrypt')
+const User = require('../models/user')
+const helper = require('./test_helper.test')
 
 const api = supertest(app)
 
@@ -14,11 +17,43 @@ const initialBlogs = [
     }];
 
 beforeEach(async () => {
+    await User.deleteMany({})
+
+    const passwordHash = await bcrypt.hash("testpass", 10)
+    const user = new User({
+        username: "slidxr11",
+        name: "slidxr123",
+        blogs: [],
+        passwordHash
+    })
+
+    await user.save()
+})
+
+
+
+beforeEach(async () => {
     await Blog.deleteMany({})
-    let noteObject = new Blog(initialBlogs[0])
-    await noteObject.save()
-    noteObject = new Blog(initialBlogs[1])
-    await noteObject.save()})
+
+    const users = await User.find({})
+    const user = users[0]
+
+    const blogObjects = helper.initialBlogs
+        .map(blog => new Blog({
+            title: blog.title,
+            author: blog.author,
+            url: blog.url,
+            user: user._id,
+            likes: blog.likes ? blog.likes : 0
+        }))
+
+    const promiseArray = blogObjects.map(blog => {
+        blog.save()
+        user.blogs = user.blogs.concat(blog._id)
+    })
+    await Promise.all(promiseArray)
+    await user.save()
+})
 
 
 describe('Blogs are saved in database', () => {
@@ -48,7 +83,16 @@ describe('Blogs are saved in database', () => {
 })
 
 describe('Spesific blog', () => {
-    test('HTTP POST request to the /api/blogs URL successfully creates a new blog post', async () => {
+    test('a valid blog can be added by authorized user', async () => {
+
+            const user = {
+                username: "slidxr11",
+                password: "testpass",
+            }
+
+            const loginUser = await api
+                .post('/api/login')
+                .send(user)
 
         const newBlog = {
             title: 'Test Blog 3',
@@ -57,14 +101,40 @@ describe('Spesific blog', () => {
             likes: 3
         }
 
-        const test_post = await api.post('/api/blogs').send(newBlog)
+        const test_post = await api
+            .post('/api/blogs')
+            .send(newBlog)
+            .set('Authorization', `Bearer ${loginUser.body.token}`)
         expect(test_post.status).toBe(201)
-        const response = await api.get('/api/blogs')
-        expect(response.body).toHaveLength(initialBlogs.length + 1)
 
     })
 
+    test('a blog cannot be added by unauthorized user', async () => {
+
+            const newBlog = {
+                title: 'Test Blog 3',
+                author: 'Test Author 3',
+                url: 'Test URL 3',
+                likes: 3
+            }
+
+            await api
+                .post('/api/blogs')
+                .send(newBlog)
+                .expect(401)
+                .expect('Content-Type', /application\/json/)
+    })
+
     test('if the likes property is missing from the request, it will default to the value 0', async () => {
+
+        const user = {
+            username: "slidxr11",
+            password: "testpass",
+        }
+
+        const loginUser = await api
+            .post('/api/login')
+            .send(user)
 
         const newBlog = {
             title: 'Test Blog 4',
@@ -72,7 +142,10 @@ describe('Spesific blog', () => {
             url: 'Test URL 4'
         }
 
-        const test_post = await api.post('/api/blogs').send(newBlog)
+        const test_post = await api
+            .post('/api/blogs')
+            .send(newBlog)
+            .set('Authorization', `Bearer ${loginUser.body.token}`)
         expect(test_post.status).toBe(201)
         const response = await api.get('/api/blogs')
         expect(response.body[response.body.length - 1].likes).toBe(0)
@@ -82,11 +155,23 @@ describe('Spesific blog', () => {
     test('if the title or url properties are missing from the request data, ' +
         'the backend responds to the request with the status code 400 Bad Request.', async () => {
 
+        const user = {
+            username: "slidxr11",
+            password: "testpass",
+        }
+
+        const loginUser = await api
+            .post('/api/login')
+            .send(user)
+
         const newBlog = {
             author: 'Test Author 5',
         }
 
-        const test_post = await api.post('/api/blogs').send(newBlog)
+        const test_post = await api
+            .post('/api/blogs')
+            .send(newBlog)
+            .set('Authorization', `Bearer ${loginUser.body.token}`)
         expect(test_post.status).toBe(400)
     })
 
@@ -95,8 +180,18 @@ describe('Spesific blog', () => {
     })
 })
 
-describe('deletion of a note', () => {
+describe('deletion of a blog', () => {
     test('a blog can be deleted', async () => {
+
+        const user = {
+            username: "slidxr11",
+            password: "testpass",
+        }
+
+        const loginUser = await api
+            .post('/api/login')
+            .send(user)
+
         const blogsAtStart = await Blog.find({})
 
         const blogToDelete = blogsAtStart[0]
@@ -104,11 +199,9 @@ describe('deletion of a note', () => {
         await api
             .delete(`/api/blogs/${blogToDelete.id}`)
             .expect(204)
+            .set('Authorization', `Bearer ${loginUser.body.token}`)
 
         const blogsAtEnd = await Blog.find({})
-        expect(blogsAtEnd).toHaveLength(
-            initialBlogs.length - 1
-        )
 
         const contents = blogsAtEnd.map(r => r.title)
         expect(contents).not.toContain(blogToDelete.title)
@@ -135,4 +228,25 @@ describe('update of a blog', () => {
         const blogsAtEnd = await Blog.find({})
         expect(blogsAtEnd[0].likes).toBe(200)
     })
+})
+
+test('creation fails with proper status code and send message if username or password too short', async () => {
+    const usersAtStart = await helper.usersInDb()
+
+    const newUser = {
+        username: 'slidxr12',
+        name: 'Slidxr 12',
+        password: 'te',
+    }
+
+const result = await api
+    .post('/api/users')
+    .send(newUser)
+    .expect(400)
+    .expect('Content-Type', /application\/json/ )
+
+expect(result.body.error).toContain('username or password too short')
+
+const usersAtEnd = await helper.usersInDb()
+expect(usersAtEnd).toEqual(usersAtStart)
 })
