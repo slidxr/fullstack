@@ -1,0 +1,13 @@
+.error {
+    color: red;
+    font-size: 1.5rem;
+    margin-top: 5px;
+    margin-bottom: 0;
+}
+
+.notification {
+    color: green;
+    font-size: 1.5rem;
+    margin-top: 5px;
+    margin-bottom: 0;
+}
