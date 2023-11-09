@@ -1,24 +1,40 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Blog from './components/Blog'
 import BlogForm from './components/BlogForm'
 import Notification from './components/Notification'
+import Togglable from "./components/Togglable.jsx";
+import AddBlogForm from "./components/AddBlogForm.jsx";
 import blogService from './services/blogs'
 import loginService from './services/login'
 
 
 const App = () => {
-  const [blogs, setBlogs] = useState([])
-  const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
-  const [user, setUser] = useState(null)
-  const [errorMessage, setErrorMessage] = useState(null)
-  const [changeMessage, setChangeMessage] = useState(null)
+    const [blogs, setBlogs] = useState([])
+    const [username, setUsername] = useState('')
+    const [password, setPassword] = useState('')
+    const [user, setUser] = useState(null)
+    const [errorMessage, setErrorMessage] = useState(null)
+    const [changeMessage, setChangeMessage] = useState(null)
+    const blogFormRef = useRef()
 
   useEffect(() => {
     blogService.getAll().then(blogs =>
         setBlogs( blogs )
     )
   }, [])
+
+    const addBlog = (blogObject) => {
+        blogFormRef.current.toggleVisibility()
+        blogService
+            .create(blogObject)
+            .then(returnedBlog => {
+                setBlogs(blogs.concat(returnedBlog))
+                setChangeMessage(`a new blog ${blogObject.title} by ${blogObject.author} added`)
+                setTimeout(() => {
+                    setChangeMessage(null)
+                }, 5000)
+            })
+    }
 
   useEffect(() => {
     const loggedUserJSON = window.localStorage.getItem('loggedBlogappUser')
@@ -87,19 +103,6 @@ const App = () => {
     setUser(null)
   }
 
-    const addBlog = async (blogObject) => {
-        try {
-            const returnedBlog = await blogService.create(blogObject)
-            setBlogs(blogs.concat(returnedBlog))
-            setChangeMessage(`a new blog ${returnedBlog.title} by ${returnedBlog.author} added`)
-            setTimeout(() => {
-                setChangeMessage(null)
-            }, 5000)
-        } catch (exception) {
-            console.log(exception)
-        }
-
-    }
 
   return (
       <div>
@@ -109,7 +112,9 @@ const App = () => {
           {user.name} logged in
           <button onClick={handleLogout}> logout </button>
         </p>
-        <BlogForm createBlog={addBlog} />
+          <Togglable buttonLabel="create" ref={blogFormRef}>
+              <AddBlogForm createBlog={addBlog} />
+          </Togglable>
         {blogs.map(blog =>
             <Blog key={blog.id} blog={blog} />
         )}
