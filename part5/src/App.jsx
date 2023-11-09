@@ -15,13 +15,14 @@ const App = () => {
     const [user, setUser] = useState(null)
     const [errorMessage, setErrorMessage] = useState(null)
     const [changeMessage, setChangeMessage] = useState(null)
+    const [refreshBlog, setRefreshBlog] = useState(false)
     const blogFormRef = useRef()
 
   useEffect(() => {
     blogService.getAll().then(blogs =>
         setBlogs( blogs )
     )
-  }, [])
+  }, [refreshBlog])
 
     const addBlog = (blogObject) => {
         blogFormRef.current.toggleVisibility()
@@ -33,6 +34,7 @@ const App = () => {
                 setTimeout(() => {
                     setChangeMessage(null)
                 }, 5000)
+                setRefreshBlog(!refreshBlog)
             })
     }
 
@@ -42,7 +44,7 @@ const App = () => {
       const user = JSON.parse(loggedUserJSON)
       setUser(user)
       blogService.setToken(user.token)
-    }}, [])
+    }}, [],)
 
   const handleLogin = async (event) => {
     event.preventDefault()
