@@ -19,8 +19,10 @@ const App = () => {
     const blogFormRef = useRef()
 
   useEffect(() => {
-    blogService.getAll().then(blogs =>
+    blogService.getAll().then(blogs => {
+        blogs.sort((a, b) => b.likes - a.likes)
         setBlogs( blogs )
+        }
     )
   }, [refreshBlog])
 
@@ -105,6 +107,11 @@ const App = () => {
     setUser(null)
   }
 
+    const addLikes = async (id, blogObject) => {
+      await blogService.update(id, blogObject)
+        setRefreshBlog(!refreshBlog)
+    }
+
 
   return (
       <div>
@@ -118,7 +125,7 @@ const App = () => {
               <AddBlogForm createBlog={addBlog} />
           </Togglable>
         {blogs.map(blog =>
-            <Blog key={blog.id} blog={blog} />
+            <Blog key={blog.id} blog={blog} addLikes={addLikes} />
         )}
       </div>
   )
