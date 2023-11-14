@@ -40,6 +40,27 @@ const App = () => {
             })
     }
 
+    const deleteBlog = (id) => {
+        const blogToDelete = blogs.find(b => b.id === id)
+        if (window.confirm(`Remove blog ${blogToDelete.title} by ${blogToDelete.author}`)) {
+            blogService
+                .deleteBlog(id)
+                .then(() => {
+                    setBlogs(blogs.filter(b => b.id !== id))
+                    setRefreshBlog(!refreshBlog)
+                })
+                .catch(error => {
+                    setErrorMessage(
+                        `Blog '${blogToDelete.title}' was already removed from server`
+                    )
+                    setTimeout(() => {
+                        setErrorMessage(null)
+                    }, 5000)
+                    setRefreshBlog(!refreshBlog)
+                })
+        }
+    }
+
   useEffect(() => {
     const loggedUserJSON = window.localStorage.getItem('loggedBlogappUser')
     if (loggedUserJSON) {
@@ -125,7 +146,7 @@ const App = () => {
               <AddBlogForm createBlog={addBlog} />
           </Togglable>
         {blogs.map(blog =>
-            <Blog key={blog.id} blog={blog} addLikes={addLikes} />
+            <Blog key={blog.id} blog={blog} addLikes={addLikes} deleteBlog={deleteBlog} />
         )}
       </div>
   )
