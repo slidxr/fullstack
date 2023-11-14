@@ -57,29 +57,29 @@ const AddBlogForm = ({ createBlog }) => {
                         value={author}
                         name="Author"
                         onChange={handleAuthorChange}
-                        />
-                    </div>
-                    <div>
+                    />
+                </div>
+                <div>
                         url:
-                        <input
-                            type="url"
-                            value={url}
-                            name="url"
-                            onChange={handleUrlChange}
-                        />
-                    </div>
-                    <div>
+                    <input
+                        type="url"
+                        value={url}
+                        name="url"
+                        onChange={handleUrlChange}
+                    />
+                </div>
+                <div>
                         likes:
-                        <input
-                            type="likes"
-                            value={likes}
-                            name="likes"
-                            onChange={handleLikesChange}
-                        />
-                    </div>
-                    <button type="submit">create</button>
-                </form>
+                    <input
+                        type="likes"
+                        value={likes}
+                        name="likes"
+                        onChange={handleLikesChange}
+                    />
+                </div>
+                <button type="submit">create</button>
+            </form>
         </div>
-)
+    )
 }
 export default AddBlogForm
